@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800&family=Comfortaa:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Comfortaa', sans-serif;
+  background: #F5F7FA;
+  color: #232C54;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(216, 90, 45, 0.15);
+  color: #232C54;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EBEAEB; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #8DB5D3; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #232C54; }
+
+@keyframes aispin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn 0.3s ease-out; }
+
+@media print {
+  body { margin: 0; padding: 20px; }
+  .no-print { display: none !important; }
+}

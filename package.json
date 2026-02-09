@@ -1,0 +1,25 @@
+{
+  "name": "actas-sas-duelegal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generador de Actas de Asamblea S.A.S. - Due Legal (LucIA AI)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@anthropic-ai/sdk": "^0.30.0",
+    "docx": "^8.5.0",
+    "googleapis": "^140.0.0",
+    "file-saver": "^2.0.5"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.2.0"
+  }
+}
