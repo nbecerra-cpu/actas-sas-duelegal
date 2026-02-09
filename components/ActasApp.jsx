@@ -197,10 +197,19 @@ async function callLucIA(prompt, context) {
       body: JSON.stringify({ prompt, context }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Error de LucIA");
-    return data.text || "";
+    if (!res.ok) {
+      console.error("LucIA API error:", data.error);
+      alert("Error de LucIA: " + (data.error || "Error desconocido"));
+      return null;
+    }
+    if (!data.text) {
+      console.error("LucIA returned empty text:", data);
+      return null;
+    }
+    return data.text;
   } catch (e) {
-    console.error("LucIA error:", e);
+    console.error("LucIA fetch error:", e);
+    alert("Error de conexión con LucIA: " + e.message);
     return null;
   }
 }
@@ -427,7 +436,15 @@ function StepDecisiones({ items, onChange, accionistas, sociedad, reunion, mesa 
   const accPresCount = accPresentes.reduce((s, a) => s + (parseInt(a.acciones) || 0), 0);
   const mayoria = Math.floor(accPresCount / 2) + 1;
 
-  const updateItem = (id, field, val) => {
+  const updateItem = (id, updates) => {
+    if (typeof updates === "string") {
+      // Legacy: updateItem(id, field, val) — but we won't use this anymore
+      return;
+    }
+    onChange(items.map(it => it.id === id ? { ...it, ...updates } : it));
+  };
+
+  const updateField = (id, field, val) => {
     onChange(items.map(it => it.id === id ? { ...it, [field]: val } : it));
   };
 
@@ -437,7 +454,7 @@ function StepDecisiones({ items, onChange, accionistas, sociedad, reunion, mesa 
 
   const handleAI = async (item) => {
     if (!item.resumen?.trim()) return;
-    updateItem(item.id, "aiLoading", true);
+    updateField(item.id, "aiLoading", true);
 
     const context = `DATOS DE LA SOCIEDAD: ${sociedad.nombre}, NIT ${sociedad.nit}, domicilio en ${sociedad.domicilio}.
 Capital suscrito: $${fmtCurrency(sociedad.cap_sus)} representado en ${sociedad.acc_sus} acciones suscritas.
@@ -457,10 +474,13 @@ ${item.resumen}
 Redacta el texto completo de este punto del acta incluyendo la deliberación, la propuesta, y el resultado de la votación con el número de acciones suscritas y pagadas que votaron a favor, en contra y en blanco. El texto debe cumplir con todos los requisitos del Art. 431 del Código de Comercio y la normatividad aplicable.`;
 
     const result = await callLucIA(prompt, context);
-    if (result) {
-      updateItem(item.id, "textoFinal", result);
-    }
-    updateItem(item.id, "aiLoading", false);
+    // Combine both updates into a single state change to avoid race condition
+    onChange(items.map(it => it.id === item.id ? { 
+      ...it, 
+      textoFinal: result || it.textoFinal || "", 
+      aiLoading: false,
+      aiError: result ? null : "No se pudo generar el texto. Verifica tu API Key e intenta de nuevo."
+    } : it));
   };
 
   return (
@@ -500,17 +520,18 @@ Redacta el texto completo de este punto del acta incluyendo la deliberación, la
               </div>
             </div>
 
-            <TextArea label="📝 Resumen del abogado (describa lo decidido)" placeholder="Ej: Se presentó el informe de gestión del representante legal y los accionistas decidieron aprobarlo..." value={item.resumen || ""} onChange={e => updateItem(item.id, "resumen", e.target.value)} />
+            <TextArea label="📝 Resumen del abogado (describa lo decidido)" placeholder="Ej: Se presentó el informe de gestión del representante legal y los accionistas decidieron aprobarlo..." value={item.resumen || ""} onChange={e => updateField(item.id, "resumen", e.target.value)} />
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
               <AIButton onClick={() => handleAI(item)} loading={item.aiLoading} label="Redactar con LucIA" />
               {!item.resumen?.trim() && <span style={{ fontSize: 11, color: COLORS.muted }}>Escriba un resumen para que LucIA redacte el texto legal</span>}
+              {item.aiError && <span style={{ fontSize: 11, color: COLORS.error, fontWeight: 600 }}>⚠️ {item.aiError}</span>}
             </div>
 
             {(item.textoFinal || item.textoFinal === "") && (
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: COLORS.ai, marginBottom: 5, fontFamily: "'Comfortaa', sans-serif" }}>✨ Texto final del acta (editable)</label>
-                <textarea value={item.textoFinal} onChange={e => updateItem(item.id, "textoFinal", e.target.value)} style={{
+                <textarea value={item.textoFinal} onChange={e => updateField(item.id, "textoFinal", e.target.value)} style={{
                   width: "100%", padding: "12px 14px", border: `2px solid ${COLORS.ai}20`, borderRadius: 8, fontSize: 13,
                   fontFamily: "'Comfortaa', sans-serif", color: COLORS.text, backgroundColor: COLORS.aiLight + "40",
                   outline: "none", minHeight: 120, resize: "vertical", boxSizing: "border-box", lineHeight: 1.6,
