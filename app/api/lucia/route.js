@@ -42,7 +42,7 @@ export async function POST(request) {
     const userMessage = `${prompt}\n\n${context}`;
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 1500,
       system: AI_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
