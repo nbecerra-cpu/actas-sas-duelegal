@@ -1,9 +1,11 @@
 // app/api/lucia/route.js
 // Backend seguro para llamadas a Claude AI (LucIA)
-// La API key nunca se expone al cliente
 
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+
+// Aumentar timeout para Vercel (máximo 60s en Hobby plan)
+export const maxDuration = 60;
 
 const AI_SYSTEM = `Eres LucIA, la asistente jurídica de inteligencia artificial de Due Legal, un despacho de abogados colombiano especializado en derecho societario. Tu función es redactar puntos de actas de asamblea de accionistas de sociedades S.A.S. colombianas.
 
@@ -38,7 +40,6 @@ export async function POST(request) {
     }
 
     const client = new Anthropic({ apiKey });
-
     const userMessage = `${prompt}\n\n${context}`;
 
     const message = await client.messages.create({
@@ -55,23 +56,29 @@ export async function POST(request) {
 
     return NextResponse.json({ text, usage: message.usage });
   } catch (error) {
-    console.error("LucIA API error:", error);
+    console.error("LucIA API error:", error?.message || error);
 
-    if (error.status === 401) {
+    if (error?.status === 401) {
       return NextResponse.json(
         { error: "API key de Anthropic inválida" },
         { status: 401 }
       );
     }
-    if (error.status === 429) {
+    if (error?.status === 429) {
       return NextResponse.json(
         { error: "Límite de uso excedido. Intente de nuevo en unos segundos." },
         { status: 429 }
       );
     }
+    if (error?.status === 404 || error?.status === 400) {
+      return NextResponse.json(
+        { error: "Modelo no disponible: " + (error?.message || "Error desconocido") },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
-      { error: "Error interno al contactar LucIA: " + error.message },
+      { error: "Error al contactar LucIA: " + (error?.message || "Error desconocido") },
       { status: 500 }
     );
   }
